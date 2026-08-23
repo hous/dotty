@@ -1,0 +1,8 @@
+brew "eza"
+brew "gh"
+brew "jq"
+brew "node"
+brew "tig"
+brew "tmux"
+cask "ghostty"
+cask "font-fira-code-nerd-font"

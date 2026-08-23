@@ -1,0 +1,2 @@
+# Packages dotpush must never auto-capture into apt.txt.
+# Prune a package from apt.txt? Move its line here or it will come back.

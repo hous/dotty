@@ -1,0 +1,10 @@
+zsh
+git
+curl
+wget
+eza
+gh
+jq
+tig
+tmux
+unzip
