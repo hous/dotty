@@ -33,6 +33,16 @@ link() {
     [ -e "$bak" ] && bak="$bak.$(date +%Y%m%d%H%M%S)"
     info "backing up $dst -> $bak"
     mv "$dst" "$bak"
+    # Don't strand machine-specific config (venvs, tokens, paths) in the backup:
+    # seed the .local file dotty's rc sources last, pointing at it.
+    case "$dst" in
+      "$HOME/.zshrc"|"$HOME/.bashrc")
+        if [ ! -e "$dst.local" ]; then
+          printf '# machine-local overrides, sourced last by dotty. Your previous %s\n# was saved at %s - move anything machine-specific here.\n' "$dst" "$bak" > "$dst.local"
+          info "seeded $dst.local - review $bak for machine-specific bits to move there"
+        fi
+        ;;
+    esac
   fi
   ln -sfn "$src" "$dst"
   info "linked $dst -> $src"
