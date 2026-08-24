@@ -46,7 +46,15 @@ if [ ! -d "$DOTTY/.git" ]; then
   fi
 else
   OLD="$(git -C "$DOTTY" rev-parse HEAD)"
-  git -C "$DOTTY" pull --ff-only --quiet
+  # rebase keeps any local not-yet-pushed dots and survives upstream history
+  # rewrites (patch-identical commits are skipped)
+  git -C "$DOTTY" pull --rebase --autostash --quiet || {
+    git -C "$DOTTY" rebase --abort >/dev/null 2>&1 || true
+    echo "!! dotty: couldn't reconcile with the remote automatically." >&2
+    echo "   If this machine has no local changes worth keeping, run:" >&2
+    echo "     git -C ~/.dotty fetch && git -C ~/.dotty reset --hard origin/main && dotpull" >&2
+    exit 1
+  }
 fi
 
 if [ ! -f "$DOTTY/shell/common.sh" ]; then
