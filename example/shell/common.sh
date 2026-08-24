@@ -6,8 +6,24 @@
 export PATH="$HOME/.local/bin:$PATH"
 
 # --- nvm ---
+# --no-use skips nvm's startup `nvm use default`, which costs ~10s per shell;
+# resolve the default version from the alias files and set PATH ourselves.
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+  \. "$NVM_DIR/nvm.sh" --no-use
+  _v="$(cat "$NVM_DIR/alias/default" 2>/dev/null || echo node)" _i=0
+  while [ -f "$NVM_DIR/alias/$_v" ] && [ "$_i" -lt 5 ]; do
+    _v="$(cat "$NVM_DIR/alias/$_v")" _i=$((_i + 1))
+  done
+  if [ ! -d "$NVM_DIR/versions/node/$_v" ]; then
+    # alias didn't resolve to an installed version (e.g. lts/*): newest wins
+    _v="$(ls "$NVM_DIR/versions/node" 2>/dev/null | sort -t. -k1.2,1n -k2,2n -k3,3n | tail -1)"
+  fi
+  if [ -n "$_v" ] && [ -d "$NVM_DIR/versions/node/$_v/bin" ]; then
+    export PATH="$NVM_DIR/versions/node/$_v/bin:$PATH"
+  fi
+  unset _v _i
+fi
 
 # --- aliases ---
 alias python="python3"
