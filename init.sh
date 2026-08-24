@@ -32,7 +32,7 @@ case "$CHOICE" in
 esac
 info "starting with: $CHOICE"
 
-mkdir -p "$DOTTY/shell" "$DOTTY/zsh" "$DOTTY/bash" "$DOTTY/ghostty" "$DOTTY/packages"
+mkdir -p "$DOTTY/shell" "$DOTTY/zsh" "$DOTTY/bash" "$DOTTY/ghostty" "$DOTTY/tmux" "$DOTTY/packages"
 
 # Minimal payload stubs; capture/example overwrite or extend them below.
 write_stubs() {
@@ -109,6 +109,10 @@ case "$CHOICE" in
       info "importing ghostty config"
       cp "$HOME/.config/ghostty/config" "$DOTTY/ghostty/config"
     fi
+    if [ -f "$HOME/.tmux.conf" ] && [ ! -L "$HOME/.tmux.conf" ]; then
+      info "importing tmux config"
+      cp "$HOME/.tmux.conf" "$DOTTY/tmux/tmux.conf"
+    fi
     capture_brewfile
     capture_apt_packages
     ;;
@@ -117,6 +121,7 @@ case "$CHOICE" in
     cp -R "$DOTTY/example/zsh"      "$DOTTY/"
     cp -R "$DOTTY/example/bash"     "$DOTTY/"
     cp -R "$DOTTY/example/ghostty"  "$DOTTY/"
+    cp -R "$DOTTY/example/tmux"     "$DOTTY/"
     cp -R "$DOTTY/example/packages" "$DOTTY/"
     cp "$DOTTY/example/Brewfile"    "$DOTTY/Brewfile"
     ;;
@@ -125,8 +130,9 @@ case "$CHOICE" in
     ;;
 esac
 
-# ghostty config must exist for install.sh's symlink
+# these must exist for install.sh's symlinks
 [ -f "$DOTTY/ghostty/config" ] || printf '# ghostty config - managed by dotty\n' > "$DOTTY/ghostty/config"
+[ -f "$DOTTY/tmux/tmux.conf" ] || printf '# ~/.tmux.conf - managed by dotty\n' > "$DOTTY/tmux/tmux.conf"
 
 # dotty.conf: derive sensible defaults for this user
 if [ "$CHOICE" = "example" ] && [ -f "$DOTTY/example/dotty.conf" ]; then

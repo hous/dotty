@@ -29,6 +29,7 @@ heal "$HOME/.zprofile"              zsh/zprofile
 heal "$HOME/.bashrc"                bash/bashrc
 heal "$HOME/.bash_profile"          bash/bash_profile
 heal "$HOME/.config/ghostty/config" ghostty/config
+heal "$HOME/.tmux.conf"             tmux/tmux.conf
 
 # Refuse to push shell config that doesn't parse - one stray quote here would
 # break shell startup on every machine at its next dotpull.

@@ -152,6 +152,7 @@ link zsh/zprofile       "$HOME/.zprofile"
 link bash/bashrc        "$HOME/.bashrc"
 link bash/bash_profile  "$HOME/.bash_profile"
 link ghostty/config     "$HOME/.config/ghostty/config"
+link tmux/tmux.conf     "$HOME/.tmux.conf"
 
 # Claude Code user-level skills
 mkdir -p "$HOME/.claude/skills"
