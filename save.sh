@@ -30,6 +30,25 @@ heal "$HOME/.bashrc"                bash/bashrc
 heal "$HOME/.bash_profile"          bash/bash_profile
 heal "$HOME/.config/ghostty/config" ghostty/config
 
+# Refuse to push shell config that doesn't parse - one stray quote here would
+# break shell startup on every machine at its next dotpull.
+check_syntax() {
+  chk="$1" rel="$2"
+  [ -f "$DOTTY/$rel" ] || return 0
+  command -v "$chk" >/dev/null 2>&1 || return 0
+  err="$("$chk" -n "$DOTTY/$rel" 2>&1)" || {
+    warn "$rel doesn't parse - fix it, then re-run:"
+    printf '%s\n' "$err" >&2
+    exit 1
+  }
+}
+check_syntax sh   shell/common.sh
+check_syntax sh   dotty.conf
+check_syntax zsh  zsh/zshrc
+check_syntax zsh  zsh/zprofile
+check_syntax bash bash/bashrc
+check_syntax bash bash/bash_profile
+
 # capture packages: Brewfile on macOS, human-installed apt packages on Debian/Ubuntu
 . "$DOTTY/lib/capture.sh"
 capture_brewfile
