@@ -35,4 +35,38 @@ capture_apt_packages() {
     printf '%s\n' $NEW_PKGS >> "$DOTTY/packages/apt.txt"
     info "captured apt packages: $(printf '%s ' $NEW_PKGS)"
   fi
+
+  # Capture removals too: a listed package that is gone from this machine and
+  # that dpkg or apt history shows being removed (not one that merely never
+  # installed here) is pruned from apt.txt and pinned in apt-ignore.txt so no
+  # machine's dotpush re-captures it.
+  REMOVED_LOG="$(zcat -f /var/log/apt/history.log* 2>/dev/null | awk -v user="$(id -un)" '
+    /^Start-Date:/{cmd="";req=""}
+    /^Commandline:/{cmd=$0}
+    /^Requested-By:/{req=$0}
+    /^End-Date:/{
+      if (req ~ user && cmd ~ /apt(-get)? +(-[^ ]+ +)*(remove|purge|autoremove) /) {
+        sub(/.*(remove|purge|autoremove) +/,"",cmd)
+        n=split(cmd,a," ")
+        for(i=1;i<=n;i++) if (a[i] !~ /^-/ && a[i] !~ /\//) { sub(/=.*/,"",a[i]); print a[i] }
+      }
+    }' | sort -u)"
+  PRUNED="$(while IFS= read -r pkg; do
+      [ -n "$pkg" ] || continue
+      st="$(dpkg-query -W -f '${Status}' "$pkg" 2>/dev/null || true)"
+      case "$st" in
+        "install ok installed") continue ;;                          # still here: keep
+        deinstall*) printf '%s\n' "$pkg"; continue ;;                # apt remove'd
+        "unknown ok not-installed") printf '%s\n' "$pkg"; continue ;; # purged (dpkg remembers it)
+      esac
+      # no dpkg trace at all: prune only with an apt-history removal to show for it
+      printf '%s\n' "$REMOVED_LOG" | grep -Fxq "$pkg" && printf '%s\n' "$pkg"
+    done < "$DOTTY/packages/apt.txt" || true)"
+  if [ -n "$PRUNED" ]; then
+    TMP="$DOTTY/packages/apt.txt.tmp"
+    printf '%s\n' "$PRUNED" | grep -Fxvf - "$DOTTY/packages/apt.txt" > "$TMP" || true
+    mv "$TMP" "$DOTTY/packages/apt.txt"
+    printf '%s\n' "$PRUNED" | grep -Fxvf "$DOTTY/packages/apt-ignore.txt" - >> "$DOTTY/packages/apt-ignore.txt" || true
+    info "pruned apt packages removed here:$(printf ' %s' $PRUNED)"
+  fi
 }

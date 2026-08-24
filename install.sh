@@ -69,14 +69,24 @@ if [ "$INSTALL_PACKAGES" = 1 ]; then
     info "installing Brewfile packages"
     brew bundle --file="$DOTTY/Brewfile" || warn "brew bundle finished with some failures (ok to re-run)"
   elif have apt-get; then
-    info "installing apt packages"
-    sudo apt-get update -qq
-    if ! xargs -a "$DOTTY/packages/apt.txt" sudo apt-get install -y -qq; then
-      info "batch install failed; retrying one by one"
-      while IFS= read -r pkg; do
+    # Only ask apt for packages that aren't installed yet: feeding it the whole
+    # list every pull is slow, needs sudo, and upgrades things behind your back.
+    MISSING="$(while IFS= read -r pkg; do
         [ -n "$pkg" ] || continue
-        sudo apt-get install -y -qq "$pkg" || warn "skipped $pkg (not available here)"
-      done < "$DOTTY/packages/apt.txt"
+        dpkg-query -W -f '${Status}' "$pkg" 2>/dev/null | grep -q 'ok installed' || printf '%s\n' "$pkg"
+      done < "$DOTTY/packages/apt.txt")"
+    if [ -n "$MISSING" ]; then
+      info "installing apt packages:$(printf ' %s' $MISSING)"
+      sudo apt-get update -qq
+      if ! printf '%s\n' "$MISSING" | xargs sudo apt-get install -y -qq; then
+        info "batch install failed; retrying one by one"
+        while IFS= read -r pkg; do
+          [ -n "$pkg" ] || continue
+          sudo apt-get install -y -qq "$pkg" || warn "skipped $pkg (not available here)"
+        done <<<"$MISSING"
+      fi
+    else
+      info "apt packages all present"
     fi
     if ! have gh; then
       info "installing GitHub CLI"
