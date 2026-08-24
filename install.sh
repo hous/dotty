@@ -19,7 +19,7 @@ WANT_OH_MY_ZSH=no
 INSTALL_PACKAGES=1
 [ "${1:-}" = "--no-packages" ] && INSTALL_PACKAGES=0
 
-info() { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
+. "$DOTTY/lib/ui.sh"
 have() { command -v "$1" >/dev/null 2>&1; }
 
 # Symlink $1 (repo-relative) to $2 (absolute), backing up any real file in the way.
@@ -67,7 +67,7 @@ if [ "$INSTALL_PACKAGES" = 1 ]; then
       brew_env
     fi
     info "installing Brewfile packages"
-    brew bundle --file="$DOTTY/Brewfile" || info "brew bundle finished with some failures (ok to re-run)"
+    brew bundle --file="$DOTTY/Brewfile" || warn "brew bundle finished with some failures (ok to re-run)"
   elif have apt-get; then
     info "installing apt packages"
     sudo apt-get update -qq
@@ -75,7 +75,7 @@ if [ "$INSTALL_PACKAGES" = 1 ]; then
       info "batch install failed; retrying one by one"
       while IFS= read -r pkg; do
         [ -n "$pkg" ] || continue
-        sudo apt-get install -y -qq "$pkg" || info "skipped $pkg (not available here)"
+        sudo apt-get install -y -qq "$pkg" || warn "skipped $pkg (not available here)"
       done < "$DOTTY/packages/apt.txt"
     fi
     if ! have gh; then
@@ -88,7 +88,7 @@ if [ "$INSTALL_PACKAGES" = 1 ]; then
       sudo apt-get update -qq && sudo apt-get install -y -qq gh
     fi
   else
-    info "no supported package manager found; skipping packages (install zsh, git, curl manually)"
+    warn "no supported package manager found; skipping packages (install zsh, git, curl manually)"
   fi
 fi
 
@@ -116,7 +116,7 @@ fi
 # --- expose the repo at ~/.dotty regardless of clone location ---
 if [ "$DOTTY" != "$HOME/.dotty" ]; then
   if [ -e "$HOME/.dotty" ] && [ ! -L "$HOME/.dotty" ]; then
-    info "warning: ~/.dotty exists and is not a symlink; leaving it alone"
+    warn "~/.dotty exists and is not a symlink; leaving it alone"
   elif [ "$(readlink "$HOME/.dotty" 2>/dev/null)" != "$DOTTY" ]; then
     ln -sfn "$DOTTY" "$HOME/.dotty"
     info "linked ~/.dotty -> $DOTTY"
@@ -176,6 +176,6 @@ done
 if have "$PREFERRED_SHELL"; then
   case "${SHELL:-}" in
     */"$PREFERRED_SHELL") ;;
-    *) info "setting default shell to $PREFERRED_SHELL"; chsh -s "$(command -v "$PREFERRED_SHELL")" || info "chsh failed; run it manually" ;;
+    *) info "setting default shell to $PREFERRED_SHELL"; chsh -s "$(command -v "$PREFERRED_SHELL")" || warn "chsh failed; run it manually" ;;
   esac
 fi

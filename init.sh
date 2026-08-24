@@ -6,30 +6,31 @@
 set -eu
 
 DOTTY="$(cd "$(dirname "$0")" && pwd)"
+. "$DOTTY/lib/ui.sh"
 . "$DOTTY/lib/capture.sh"
 
 if [ -f "$DOTTY/shell/common.sh" ]; then
-  echo "==> dotty: already initialized (payload exists); nothing to do"
+  info "already initialized (payload exists); nothing to do"
   exit 0
 fi
 
 if [ ! -e /dev/tty ] || ! [ -t 1 ]; then
-  echo "!! dotty: first run needs a choice from you - run ~/.dotty/init.sh in a terminal" >&2
+  warn "first run needs a choice from you - run ~/.dotty/init.sh in a terminal"
   exit 1
 fi
 
-echo "==> dotty: no preferences here yet. How should we start?"
+info "no preferences here yet. How should we start?"
 echo "    [c] capture this machine's current dotfiles and packages (default)"
 echo "    [e] start from the example set (a sane, generic baseline)"
 echo "    [b] start blank"
-printf '==> dotty: your call [c/e/b]: '
+printf "${C_INFO}%s${C_OFF} dotty${C_DIM}%s${C_OFF} your call [c/e/b]: " "$DOTS" "$SEP"
 read -r CHOICE </dev/tty || CHOICE=c
 case "$CHOICE" in
   [eE]*) CHOICE=example ;;
   [bB]*) CHOICE=blank ;;
   *)     CHOICE=capture ;;
 esac
-echo "==> dotty: starting with: $CHOICE"
+info "starting with: $CHOICE"
 
 mkdir -p "$DOTTY/shell" "$DOTTY/zsh" "$DOTTY/bash" "$DOTTY/ghostty" "$DOTTY/packages"
 
@@ -83,7 +84,7 @@ EOF
 import_rc() {
   src="$1" dst="$2" localfile="$3"
   [ -f "$src" ] && [ ! -L "$src" ] || return 0
-  echo "==> dotty: importing $src"
+  info "importing $src"
   cp "$src" "$DOTTY/$dst"
   if ! grep -q '\.dotty/shell/common\.sh' "$DOTTY/$dst"; then
     cat >> "$DOTTY/$dst" <<EOF
@@ -105,7 +106,7 @@ case "$CHOICE" in
     import_rc "$HOME/.bashrc"       bash/bashrc       .bashrc.local
     import_rc "$HOME/.bash_profile" bash/bash_profile .bash_profile.local
     if [ -f "$HOME/.config/ghostty/config" ] && [ ! -L "$HOME/.config/ghostty/config" ]; then
-      echo "==> dotty: importing ghostty config"
+      info "importing ghostty config"
       cp "$HOME/.config/ghostty/config" "$DOTTY/ghostty/config"
     fi
     capture_brewfile
@@ -155,10 +156,10 @@ if git -C "$DOTTY" rev-parse --git-dir >/dev/null 2>&1; then
   git -C "$DOTTY" commit -q -m "dotty init: $CHOICE on $(hostname -s)" 2>/dev/null \
     || git -C "$DOTTY" -c user.name="$(id -un)" -c user.email="$(id -un)@$(hostname -s)" \
          commit -q -m "dotty init: $CHOICE on $(hostname -s)"
-  echo "==> dotty: committed your starting dots ($CHOICE)"
+  ok "committed your starting dots ($CHOICE)"
   case "$(git -C "$DOTTY" remote get-url origin 2>/dev/null)" in
     *hous/dotty*)
-      echo "==> dotty: this clone still points at the dotty template, which you can't push to."
+      info "this clone still points at the dotty template, which you can't push to."
       echo "    Make it yours:  gh repo create dotty --private --source $DOTTY --push"
       echo "    (or create a private repo and: git -C ~/.dotty remote set-url origin <your-url>)"
       ;;

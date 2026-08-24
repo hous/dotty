@@ -14,6 +14,23 @@ DOTTY="$HOME/.dotty"
 REPO_SSH="git@github.com:YOURNAME/dotty.git"
 REPO_HTTPS="https://github.com/YOURNAME/dotty.git"
 
+# --- ui: inline copy of lib/ui.sh (this script must run standalone via
+# curl|sh, before the repo exists) - keep the two in sync ---
+case "${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" in
+  *[Uu][Tt][Ff]*8*) DOT='●' DOT_OPEN='○' DOTS='●●●' SEP=' ·' ;;
+  *)                DOT='*' DOT_OPEN='o' DOTS='==>' SEP=':' ;;
+esac
+if [ -t 1 ] && [ "${TERM:-dumb}" != dumb ] && [ -z "${NO_COLOR:-}" ]; then
+  C_OK='\033[1;32m' C_INFO='\033[1;34m' C_WARN='\033[1;33m' C_DIM='\033[2m' C_OFF='\033[0m'
+else
+  C_OK='' C_INFO='' C_WARN='' C_DIM='' C_OFF=''
+fi
+info() { printf "${C_INFO}%s${C_OFF} dotty${C_DIM}%s${C_OFF} %s\n" "$DOTS" "$SEP" "$*"; }
+ok()   { printf "${C_OK}%s${C_OFF} dotty${C_DIM}%s${C_OFF} %s\n" "$DOTS" "$SEP" "$*"; }
+warn() { printf "${C_WARN}%s${C_OFF} dotty${C_DIM}%s${C_OFF} %s\n" "$DOTS" "$SEP" "$*" >&2; }
+item()      { printf "  ${C_OK}%s${C_OFF} %-9s %s\n" "$DOT" "$1" "$2"; }
+item_open() { printf "  ${C_DIM}%s${C_OFF} %-9s %s\n" "$DOT_OPEN" "$1" "$2"; }
+
 ssh_ok() {
   # </dev/null so ssh can't swallow keystrokes buffered in the terminal
   ssh -o BatchMode=yes -o ConnectTimeout=5 -T git@github.com </dev/null 2>&1 \
@@ -28,7 +45,7 @@ if [ ! -e "$DOTTY" ] && [ -e "$HOME/.dotfiles/.git" ]; then
     mv "$HOME/.dotfiles" "$DOTTY"
     ln -sfn "$DOTTY" "$HOME/.dotfiles"
   fi
-  echo "==> dotty: migrated ~/.dotfiles to ~/.dotty"
+  info "migrated ~/.dotfiles to ~/.dotty"
 fi
 
 if [ ! -d "$DOTTY/.git" ]; then
@@ -37,11 +54,11 @@ if [ ! -d "$DOTTY/.git" ]; then
   if ! ssh_ok && [ -S "$OP_SOCK" ]; then
     export SSH_AUTH_SOCK="$OP_SOCK"
   fi
-  echo "==> dotty: fetching your dots"
+  info "fetching your dots"
   if ssh_ok; then
     git clone "$REPO_SSH" "$DOTTY"
   else
-    echo "==> dotty: no SSH key for GitHub; cloning over https (prompts for credentials)"
+    info "no SSH key for GitHub; cloning over https (prompts for credentials)"
     git clone "$REPO_HTTPS" "$DOTTY"
   fi
 else
@@ -50,7 +67,7 @@ else
   # rewrites (patch-identical commits are skipped)
   git -C "$DOTTY" pull --rebase --autostash --quiet || {
     git -C "$DOTTY" rebase --abort >/dev/null 2>&1 || true
-    echo "!! dotty: couldn't reconcile with the remote automatically." >&2
+    warn "couldn't reconcile with the remote automatically."
     echo "   If this machine has no local changes worth keeping, run:" >&2
     echo "     git -C ~/.dotty fetch && git -C ~/.dotty reset --hard origin/main && dotpull" >&2
     exit 1
@@ -70,18 +87,18 @@ PREFERRED_SHELL=zsh
 
 # Report what this pull actually brought to the machine.
 if [ -z "${OLD:-}" ]; then
-  echo "==> dotty: fresh dots installed - welcome"
+  ok "fresh dots installed - welcome"
   # curl|sh can't refresh the calling shell, so hand this terminal a new one
   # directly (stdin is the curl pipe - rewire it to the terminal).
   if command -v "$PREFERRED_SHELL" >/dev/null 2>&1 && [ -t 1 ] && [ -e /dev/tty ]; then
     exec "$PREFERRED_SHELL" -il </dev/tty
   fi
-  echo "==> dotty: open a new shell to pick up dotpull/dotpush"
+  info "open a new shell to pick up dotpull/dotpush"
   exit 0
 fi
 NEW="$(git -C "$DOTTY" rev-parse HEAD)"
 if [ "$OLD" = "$NEW" ]; then
-  echo "==> dotty: everything's tidy - nothing new"
+  ok "everything's tidy - all dots in a row"
   exit 0
 fi
 added() { git -C "$DOTTY" diff "$OLD" "$NEW" -- "$@" | grep '^+[^+]' | cut -c2-; }
@@ -90,8 +107,9 @@ PKGS="$( { added packages/apt.txt | grep -v '^[[:space:]]*$' || true
 ALIASES="$(added shell/common.sh | sed -n 's/.*alias \([A-Za-z0-9_-]*\)=.*/\1/p' | xargs)"
 OTHER="$(git -C "$DOTTY" diff --name-only "$OLD" "$NEW" \
   | grep -v -e '^packages/apt.txt$' -e '^Brewfile$' -e '^shell/common.sh$' | xargs)"
-echo "==> dotty: new dots landed ($(git -C "$DOTTY" rev-list --count "$OLD..$NEW") commit(s)):"
-[ -n "$PKGS" ]    && echo "    new packages: $PKGS"
-[ -n "$ALIASES" ] && echo "    new aliases:  $ALIASES"
-[ -n "$OTHER" ]   && echo "    changed:      $OTHER"
+COUNT="$(git -C "$DOTTY" rev-list --count "$OLD..$NEW")"
+if [ "$COUNT" = 1 ]; then ok "1 new dot landed:"; else ok "$COUNT new dots landed:"; fi
+[ -n "$PKGS" ]    && item packages "$PKGS"
+[ -n "$ALIASES" ] && item aliases "$ALIASES"
+[ -n "$OTHER" ]   && item_open changed "$OTHER"
 exit 0

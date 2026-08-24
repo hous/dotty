@@ -1,10 +1,11 @@
 # dotty lib/capture.sh - package capture helpers, POSIX sh.
 # Sourced by save.sh and init.sh with $DOTTY set to the repo root.
+. "$DOTTY/lib/ui.sh"
 
 # macOS: re-dump the Brewfile from the live brew state.
 capture_brewfile() {
   if [ "$(uname -s)" = "Darwin" ] && command -v brew >/dev/null 2>&1; then
-    echo "==> dotty: dumping Brewfile"
+    info "dumping Brewfile"
     brew bundle dump --file="$DOTTY/Brewfile" --force
   fi
 }
@@ -32,6 +33,6 @@ capture_apt_packages() {
        | grep -Fxvf "$DOTTY/packages/apt-ignore.txt" || true)"
   if [ -n "$NEW_PKGS" ]; then
     printf '%s\n' $NEW_PKGS >> "$DOTTY/packages/apt.txt"
-    echo "==> dotty: captured apt packages: $(printf '%s ' $NEW_PKGS)"
+    info "captured apt packages: $(printf '%s ' $NEW_PKGS)"
   fi
 }
