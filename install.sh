@@ -173,11 +173,22 @@ if grep -q "plugins/tpm" "$DOTTY/tmux/tmux.conf" 2>/dev/null && have git; then
   # clone declared plugins directly - tpm's own installer needs a running server
   sed -n "s/^set -g @plugin ['\"]\([^'\"]*\)['\"].*/\1/p" "$DOTTY/tmux/tmux.conf" \
   | while IFS= read -r plug; do
-      dst="$HOME/.tmux/plugins/$(basename "$plug")"
+      # TPM supports repo#tag; keep the tag out of both the URL and directory,
+      # then check out that exact version while cloning.
+      repo="${plug%%#*}"
+      ref=""
+      [ "$repo" = "$plug" ] || ref="${plug#*#}"
+      dst="$HOME/.tmux/plugins/$(basename "$repo")"
       [ -d "$dst" ] && continue
-      case "$plug" in *://*) url="$plug" ;; *) url="https://github.com/$plug" ;; esac
-      info "installing tmux plugin $(basename "$plug")"
-      git clone -q --depth 1 "$url" "$dst" || warn "couldn't clone tmux plugin $plug"
+      case "$repo" in *://*) url="$repo" ;; *) url="https://github.com/$repo" ;; esac
+      info "installing tmux plugin $plug"
+      # -c advice.detachedHead=false: cloning a #tag detaches HEAD by design
+      if [ -n "$ref" ]; then
+        git -c advice.detachedHead=false clone -q --depth 1 --branch "$ref" "$url" "$dst" \
+          || warn "couldn't clone tmux plugin $plug"
+      else
+        git clone -q --depth 1 "$url" "$dst" || warn "couldn't clone tmux plugin $plug"
+      fi
     done
 fi
 
