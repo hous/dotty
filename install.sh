@@ -164,6 +164,23 @@ link bash/bash_profile  "$HOME/.bash_profile"
 link ghostty/config     "$HOME/.config/ghostty/config"
 link tmux/tmux.conf     "$HOME/.tmux.conf"
 
+# --- tmux plugins (only if the conf uses tpm) ---
+if grep -q "plugins/tpm" "$DOTTY/tmux/tmux.conf" 2>/dev/null && have git; then
+  if [ ! -d "$HOME/.tmux/plugins/tpm" ]; then
+    info "installing tpm (tmux plugin manager)"
+    git clone -q --depth 1 https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
+  fi
+  # clone declared plugins directly - tpm's own installer needs a running server
+  sed -n "s/^set -g @plugin ['\"]\([^'\"]*\)['\"].*/\1/p" "$DOTTY/tmux/tmux.conf" \
+  | while IFS= read -r plug; do
+      dst="$HOME/.tmux/plugins/$(basename "$plug")"
+      [ -d "$dst" ] && continue
+      case "$plug" in *://*) url="$plug" ;; *) url="https://github.com/$plug" ;; esac
+      info "installing tmux plugin $(basename "$plug")"
+      git clone -q --depth 1 "$url" "$dst" || warn "couldn't clone tmux plugin $plug"
+    done
+fi
+
 # Claude Code user-level skills
 mkdir -p "$HOME/.claude/skills"
 for lnk in "$HOME/.claude/skills"/*; do
