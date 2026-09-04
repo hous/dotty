@@ -45,6 +45,7 @@ check_syntax() {
 }
 check_syntax sh   shell/common.sh
 check_syntax sh   dotty.conf
+check_syntax sh   packages/tools.sh
 check_syntax zsh  zsh/zshrc
 check_syntax zsh  zsh/zprofile
 check_syntax bash bash/bashrc

@@ -100,6 +100,11 @@ if [ "$INSTALL_PACKAGES" = 1 ]; then
   else
     warn "no supported package manager found; skipping packages (install zsh, git, curl manually)"
   fi
+
+  # standalone tools no package manager tracks (see packages/tools.sh)
+  if [ -f "$DOTTY/packages/tools.sh" ]; then
+    . "$DOTTY/packages/tools.sh"
+  fi
 fi
 
 # --- oh-my-zsh (only if explicitly wanted in dotty.conf) ---
