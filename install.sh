@@ -169,6 +169,14 @@ link bash/bash_profile  "$HOME/.bash_profile"
 link ghostty/config     "$HOME/.config/ghostty/config"
 link tmux/tmux.conf     "$HOME/.tmux.conf"
 
+# --- git: include git/gitconfig from ~/.gitconfig (local file keeps credential helpers) ---
+if [ -f "$DOTTY/git/gitconfig" ] && have git; then
+  if ! git config --global --get-all include.path 2>/dev/null | grep -qx "$DOTTY/git/gitconfig"; then
+    git config --global --add include.path "$DOTTY/git/gitconfig"
+    info "git config now includes git/gitconfig"
+  fi
+fi
+
 # --- tmux plugins (only if the conf uses tpm) ---
 if grep -q "plugins/tpm" "$DOTTY/tmux/tmux.conf" 2>/dev/null && have git; then
   if [ ! -d "$HOME/.tmux/plugins/tpm" ]; then

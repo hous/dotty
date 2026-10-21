@@ -60,8 +60,12 @@ changes, and folds in anything you describe in words.
   `~/.claude/skills/`.
 
 Anything machine-specific (work-only env vars, one-off paths) goes in
-`~/.zshrc.local` / `~/.bashrc.local`: sourced last, never tracked. Git config is
-deliberately *not* managed; your identity shouldn't ship with your dotfiles.
+`~/.zshrc.local` / `~/.bashrc.local`: sourced last, never tracked.
+
+Git identity and portable git settings go in `git/gitconfig` (optional). The
+installer adds it to `~/.gitconfig` as an `[include]`, so `~/.gitconfig` stays a
+plain local file and machine-specific entries such as credential helpers are
+kept. Keep your copy of dotty private if you track your identity there.
 
 ## The curl one-liner (optional)
 
