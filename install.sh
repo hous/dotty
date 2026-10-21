@@ -109,21 +109,22 @@ if [ "$INSTALL_PACKAGES" = 1 ]; then
   # crates from `cargo install` (see packages/cargo.txt); rustup is installed
   # with --no-modify-path because dotty owns the rc files it would edit.
   if [ -s "$DOTTY/packages/cargo.txt" ]; then
-    PATH="$HOME/.cargo/bin:$PATH"
-    if ! have cargo; then
+    # distro cargo packages lag years behind; crates need the rustup toolchain
+    if [ ! -x "$HOME/.cargo/bin/cargo" ]; then
       info "installing rustup (cargo)"
       curl -fsSL https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal \
         || warn "rustup install failed; skipping packages/cargo.txt"
     fi
-    if have cargo; then
-      INSTALLED_CRATES="$(cargo install --list 2>/dev/null | awk '/^[^ ]/{print $1}')"
+    CARGO="$HOME/.cargo/bin/cargo"
+    if [ -x "$CARGO" ]; then
+      INSTALLED_CRATES="$("$CARGO" install --list 2>/dev/null | awk '/^[^ ]/{print $1}')"
       while IFS= read -r spec; do
         case "$spec" in ""|\#*) continue ;; esac
         name="${spec%% *}"
         printf '%s\n' "$INSTALLED_CRATES" | grep -Fxq "$name" && continue
         info "cargo install $spec"
         # spec is "name [--git url]"; unquoted so cargo gets the words
-        cargo install -q $spec || warn "cargo install $name failed (re-run: ~/.dotty/install.sh)"
+        "$CARGO" install -q $spec || warn "cargo install $name failed (re-run: ~/.dotty/install.sh)"
       done < "$DOTTY/packages/cargo.txt"
     fi
   fi
