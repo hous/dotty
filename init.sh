@@ -72,7 +72,7 @@ EOF
 # ~/.bash_profile - managed by dotty. Login shells: same as interactive.
 [ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"
 EOF
-  touch "$DOTTY/packages/apt.txt"
+  touch "$DOTTY/packages/apt.txt" "$DOTTY/packages/cargo.txt"
   cat > "$DOTTY/packages/apt-ignore.txt" <<'EOF'
 # Packages dotpush must never auto-capture into apt.txt.
 # Prune a package from apt.txt? Move its line here or it will come back.
@@ -115,6 +115,7 @@ case "$CHOICE" in
     fi
     capture_brewfile
     capture_apt_packages
+    capture_cargo_packages
     ;;
   example)
     cp -R "$DOTTY/example/shell"    "$DOTTY/"

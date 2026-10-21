@@ -10,6 +10,29 @@ capture_brewfile() {
   fi
 }
 
+# Rust: crates installed with `cargo install` on this machine. Appends new
+# ones to packages/cargo.txt (never prunes: an absent crate may just be
+# uninstalled here).
+capture_cargo_packages() {
+  CARGO="$(command -v cargo 2>/dev/null || true)"
+  [ -n "$CARGO" ] || [ ! -x "$HOME/.cargo/bin/cargo" ] || CARGO="$HOME/.cargo/bin/cargo"
+  [ -n "$CARGO" ] || return 0
+  mkdir -p "$DOTTY/packages"
+  touch "$DOTTY/packages/cargo.txt"
+  # One line per crate: "name" (crates.io) or "name --git <url>". Lines are
+  # passed to `cargo install` verbatim.
+  NEW_CRATES="$("$CARGO" install --list 2>/dev/null | awk '
+    /^[^ ]/ {
+      name=$1; src=""
+      if ($3 ~ /^\(https?:\/\//) { src=$3; sub(/^\(/,"",src); sub(/[#)].*$/,"",src) }
+      if (src != "") print name " --git " src; else print name
+    }' | sort -u | grep -Fxvf "$DOTTY/packages/cargo.txt" || true)"
+  if [ -n "$NEW_CRATES" ]; then
+    printf '%s\n' "$NEW_CRATES" >> "$DOTTY/packages/cargo.txt"
+    info "captured cargo crates:$(printf '%s\n' "$NEW_CRATES" | awk '{printf " %s", $1}')"
+  fi
+}
+
 # Debian/Ubuntu: capture packages a human explicitly installed (apt history
 # marks those with Requested-By), skipping lib/dev noise and version pins.
 # Appends new ones to packages/apt.txt, honoring packages/apt-ignore.txt.

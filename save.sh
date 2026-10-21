@@ -51,10 +51,11 @@ check_syntax zsh  zsh/zprofile
 check_syntax bash bash/bashrc
 check_syntax bash bash/bash_profile
 
-# capture packages: Brewfile on macOS, human-installed apt packages on Debian/Ubuntu
+# capture packages: Brewfile on macOS, human-installed apt packages on Debian/Ubuntu, cargo crates
 . "$DOTTY/lib/capture.sh"
 capture_brewfile
 capture_apt_packages
+capture_cargo_packages
 
 if [ -n "$(git status --porcelain)" ]; then
   # crude secret check before anything is committed

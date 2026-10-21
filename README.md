@@ -39,7 +39,7 @@ repo.
 
 | you did | now run | what happens |
 |---|---|---|
-| added an alias, installed a package | `dotpush` | Brewfile re-dumped (macOS) / human-installed apt packages captured (Linux), everything committed (with a secret check), rebased, pushed |
+| added an alias, installed a package | `dotpush` | Brewfile re-dumped (macOS) / human-installed apt packages captured (Linux) / `cargo install`ed crates captured, everything committed (with a secret check), rebased, pushed |
 | another machine pushed | `dotpull` | pulls, re-runs the installer, restarts your shell, reports the new dots |
 
 `dotpush` takes an optional commit message: `dotpush added ripgrep`. In Claude
@@ -50,6 +50,8 @@ changes, and folds in anything you describe in words.
 
 - **macOS**: Homebrew if missing, then `brew bundle`
 - **Linux (Debian/Ubuntu)**: `apt` packages from `packages/apt.txt` + GitHub CLI
+- **Any OS**: crates listed in `packages/cargo.txt` via `cargo install` (rustup is
+  installed if cargo is missing)
 - Sets your preferred shell (`PREFERRED_SHELL` in `dotty.conf`: zsh or bash) as
   the default. **oh-my-zsh** installs only if `WANT_OH_MY_ZSH=yes`. **nvm**
   installs either way.

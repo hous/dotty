@@ -4,6 +4,7 @@
 
 # --- PATH ---
 export PATH="$HOME/.local/bin:$PATH"
+[ -d "$HOME/.cargo/bin" ] && export PATH="$HOME/.cargo/bin:$PATH"
 
 # --- nvm ---
 # --no-use skips nvm's startup `nvm use default`, which costs ~10s per shell;
